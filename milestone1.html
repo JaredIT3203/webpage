@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milestone 1 - Book Data Display</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f9;
+            padding: 20px;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #343a40;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+        h2 {
+            margin-top: 40px;
+        }
+        .book-container {
+            background-color: #ffffff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .book-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+        .book-author, .book-publisher, .book-published-date {
+            margin-bottom: 8px;
+            color: #6c757d;
+        }
+        .book-link a {
+            text-decoration: none;
+            color: #28a745;
+            font-weight: bold;
+        }
+        .book-link a:hover {
+            text-decoration: underline;
+        }
+        #book-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Milestone 1: Book Data Display</h1>
+
+    <h2>Single Book Display</h2>
+    <div id="single-book" class="book-container"></div>
+
+    <h2>List of Books Display</h2>
+    <div id="book-list"></div>
+
+    <script src="Jquery.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Single book display
+            $.getJSON('google-books-book.json', function(data) {
+                $('#single-book').append(`
+                    <div class="book-title">${data.volumeInfo.title}</div>
+                    <div class="book-author">Authors: ${data.volumeInfo.authors.join(', ')}</div>
+                    <div class="book-publisher">Publisher: ${data.volumeInfo.publisher}</div>
+                    <div class="book-published-date">Published Date: ${data.volumeInfo.publishedDate}</div>
+                    <div class="book-link">Preview Book: <a href="${data.volumeInfo.previewLink}" target="_blank">View Preview</a></div>
+                `);
+            });
+
+            // List of books display
+            $.getJSON('google-books-search.json', function(data) {
+                $.each(data.items, function(index, book) {
+                    $('#book-list').append(`
+                        <div class="book-container">
+                            <div class="book-title">${book.volumeInfo.title}</div>
+                            <div class="book-author">Authors: ${book.volumeInfo.authors ? book.volumeInfo.authors.join(', ') : 'Unknown Author'}</div>
+                            <div class="book-publisher">Publisher: ${book.volumeInfo.publisher ? book.volumeInfo.publisher : 'Unknown Publisher'}</div>
+                            <div class="book-published-date">Published Date: ${book.volumeInfo.publishedDate ? book.volumeInfo.publishedDate : 'Unknown Date'}</div>
+                            <div class="book-link">Preview Book: <a href="${book.volumeInfo.previewLink}" target="_blank">View Preview</a></div>
+                        </div>
+                    `);
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
