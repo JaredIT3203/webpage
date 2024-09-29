@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Details</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            padding: 20px;
+            background-color: #0073e6;
+            color: white;
+            margin: 0;
+        }
+        .book-details {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            max-width: 800px;
+            margin: auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .book-details img {
+            max-height: 300px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .book-details h2 {
+            color: #0073e6;
+            margin-bottom: 10px;
+        }
+        .book-details p {
+            font-size: 16px;
+            margin: 5px 0;
+            color: #555;
+        }
+        .back-link {
+            margin-top: 20px;
+            text-decoration: none;
+            color: #0073e6;
+            font-weight: bold;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <h1>Book Details</h1>
+    <div class="book-details" id="bookDetails"></div>
+
+    <script>
+        async function fetchBookDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const bookId = urlParams.get('id');
+            const apiKey = 'AIzaSyC0C4zLhjMI7taoSU23-q_kI4iFNq0IRFc';
+            const url = `https://www.googleapis.com/books/v1/volumes/${bookId}?key=${apiKey}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayBookDetails(data);
+            } catch (error) {
+                console.error('Fetch error:', error);
+                document.getElementById('bookDetails').innerText = 'Error fetching book details';
+            }
+        }
+
+        function displayBookDetails(book) {
+            const bookDetailsDiv = document.getElementById('bookDetails');
+
+            if (book) {
+                bookDetailsDiv.innerHTML = `
+                    <h2>${book.volumeInfo.title}</h2>
+                    <img src="${book.volumeInfo.imageLinks?.thumbnail || 'no-image.png'}" alt="${book.volumeInfo.title}">
+                    <p><strong>Authors:</strong> ${book.volumeInfo.authors ? book.volumeInfo.authors.join(', ') : 'Unknown'}</p>
+                    <p><strong>Published Date:</strong> ${book.volumeInfo.publishedDate || 'N/A'}</p>
+                    <p><strong>Description:</strong> ${book.volumeInfo.description || 'No description available.'}</p>
+                    <p><strong>Page Count:</strong> ${book.volumeInfo.pageCount || 'N/A'}</p>
+                    <p><strong>Categories:</strong> ${book.volumeInfo.categories ? book.volumeInfo.categories.join(', ') : 'None'}</p>
+                    <p><strong>Publisher:</strong> ${book.volumeInfo.publisher || 'Unknown'}</p>
+                    <a class="back-link" href="milestone2.html">Back to Search</a>
+                `;
+            } else {
+                bookDetailsDiv.innerHTML = '<p>No book details available.</p>';
+            }
+        }
+
+        
+        window.onload = fetchBookDetails;
+    </script>
+</body>
+</html>

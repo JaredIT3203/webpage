@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Public Bookshelf</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            padding: 20px;
+            background-color: #0073e6;
+            color: white;
+            margin: 0;
+        }
+        #bookshelf {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            padding: 20px;
+        }
+        .book {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin: 15px;
+            padding: 15px;
+            max-width: 180px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .book:hover {
+            transform: scale(1.05);
+        }
+        .book img {
+            border-radius: 4px;
+            max-height: 150px;
+            margin-bottom: 10px;
+        }
+        .book h3 {
+            font-size: 18px;
+            color: #0073e6;
+        }
+        .book p {
+            font-size: 14px;
+            color: #555;
+        }
+        .pagination {
+            text-align: center;
+            padding: 20px;
+        }
+        .pagination button {
+            background-color: #0073e6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .pagination button:hover {
+            background-color: #005bb5;
+        }
+        .pagination button:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>My Bookshelf</h1>
+    <div id="bookshelf"></div>
+    <div class="pagination" id="pagination"></div>
+
+    <script>
+        const userId = '101559322311645416637'; 
+        const bookshelfId = '1001';
+        const apiKey = 'AIzaSyC0C4zLhjMI7taoSU23-q_kI4iFNq0IRFc'; 
+        const booksPerPage = 8; 
+        let totalPages = 0;
+
+        async function fetchBookshelf(page = 1) {
+            const startIndex = (page - 1) * booksPerPage;
+            const url = `https://www.googleapis.com/books/v1/users/${userId}/bookshelves/${bookshelfId}/volumes?startIndex=${startIndex}&maxResults=${booksPerPage}&key=${apiKey}`;
+
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                displayBookshelf(data.items || []);
+
+                if (page === 1) {
+                    const totalItems = data.totalItems;
+                    totalPages = Math.ceil(totalItems / booksPerPage);
+                    createPagination(totalPages);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                document.getElementById('bookshelf').innerText = 'Error fetching bookshelf data';
+            }
+        }
+
+        function displayBookshelf(books) {
+            const bookshelfDiv = document.getElementById('bookshelf');
+            bookshelfDiv.innerHTML = '';
+
+            if (books.length > 0) {
+                books.forEach(book => {
+                    const bookDiv = document.createElement('div');
+                    bookDiv.classList.add('book');
+                    bookDiv.innerHTML = `
+                        <img src="${book.volumeInfo.imageLinks?.thumbnail || 'no-image.png'}" alt="${book.volumeInfo.title}">
+                        <h3><a href="bookdetails.html?id=${book.id}">${book.volumeInfo.title}</a></h3>
+                        <p>Author: ${book.volumeInfo.authors ? book.volumeInfo.authors.join(', ') : 'Unknown'}</p>
+                    `;
+                    bookshelfDiv.appendChild(bookDiv);
+                });
+            } else {
+                bookshelfDiv.innerHTML = '<p>No books found in this bookshelf.</p>';
+            }
+        }
+
+        function createPagination(totalPages) {
+            const paginationDiv = document.getElementById('pagination');
+            paginationDiv.innerHTML = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.innerText = `Page ${i}`;
+                button.onclick = () => fetchBookshelf(i);
+                paginationDiv.appendChild(button);
+            }
+        }
+
+        window.onload = () => fetchBookshelf(1);
+    </script>
+</body>
+</html>
