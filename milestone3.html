@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Books Search & Bookshelf</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f8ff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            padding: 20px;
+            background-color: #0073e6;
+            color: white;
+            margin: 0;
+        }
+        #searchContainer {
+            text-align: center;
+            margin-top: 20px;
+        }
+        #search-input {
+            padding: 10px;
+            width: 300px;
+            border: 1px solid #0073e6;
+            border-radius: 4px;
+            outline: none;
+        }
+        #search-input:focus {
+            border-color: #005bb5;
+        }
+        #search-btn {
+            padding: 10px 15px;
+            margin-left: 10px;
+            background-color: #0073e6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #search-btn:hover {
+            background-color: #005bb5;
+        }
+        #results, #bookshelf {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .book-item {
+            border: 1px solid #0073e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px;
+            background-color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 200px;
+            text-align: center;
+        }
+        .book-item img {
+            max-height: 150px;
+            border-radius: 4px;
+        }
+        .book-item h4 {
+            font-size: 1.1em;
+            color: #0073e6;
+            margin: 10px 0;
+        }
+        #book-details {
+            margin-top: 20px;
+        }
+        .home-link {
+            display: block;
+            text-align: center;
+            margin-top: 30px;
+            font-size: 1.2em;
+            color: #0073e6;
+            text-decoration: none;
+        }
+        .home-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Google Books Search & Bookshelf</h1>
+    <div id="searchContainer">
+        <input type="text" id="search-input" placeholder="Search for books...">
+        <button id="search-btn">Search</button>
+    </div>
+
+    <div id="results"></div>
+    
+    <h2>Your Public Bookshelf</h2>
+    <div id="bookshelf"></div>
+    
+    <div id="book-details"></div>
+
+    <a href="index.html" class="home-link">Return to Homepage</a> 
+
+    <script>
+        const API_KEY = 'AIzaSyC0C4zLhjMI7taoSU23-q_kI4iFNq0IRFc'; 
+        const USER_ID = '101559322311645416637'; 
+        const BOOKSHELF_ID = '1001'; 
+        let currentPage = 1;
+        let totalPages = 5; 
+
+        $(document).ready(function () {
+            $('#search-btn').on('click', function () {
+                currentPage = 1; 
+                searchBooks();
+            });
+
+        
+            $('#search-input').on('keypress', function (event) {
+                if (event.which === 13) { 
+                    currentPage = 1; 
+                    searchBooks();
+                }
+            });
+
+            $(document).on('click', '.page-link', function () {
+                currentPage = $(this).data('page');
+                searchBooks();
+            });
+
+            $(document).on('click', '.book-item', function () {
+                const bookId = $(this).data('id');
+                displayBookDetails(bookId);
+            });
+
+            loadBookshelf();
+        });
+
+        function searchBooks() {
+            const searchQuery = $('#search-input').val();
+            const startIndex = (currentPage - 1) * 10;
+
+            $.getJSON(`https://www.googleapis.com/books/v1/volumes?q=${searchQuery}&startIndex=${startIndex}&maxResults=10&key=${API_KEY}`, function (data) {
+                $('#results').empty();
+
+                if (data.items) {
+                    $.each(data.items, function (index, item) {
+                        const title = item.volumeInfo.title;
+                        const image = item.volumeInfo.imageLinks?.thumbnail || 'https://via.placeholder.com/150';
+                        const bookId = item.id;
+
+                        $('#results').append(`
+                            <div class="book-item" data-id="${bookId}">
+                                <img src="${image}" alt="${title}">
+                                <h4>${title}</h4>
+                            </div>
+                        `);
+                    });
+
+                    for (let i = 1; i <= totalPages; i++) {
+                        $('#pagination').append(`
+                            <span class="page-link ${i === currentPage ? 'active' : ''}" data-page="${i}">
+                                ${i}
+                            </span>
+                        `);
+                    }
+                } else {
+                    $('#results').append('<p>No results found.</p>');
+                }
+            });
+        }
+
+        function displayBookDetails(bookId) {
+            $.getJSON(`https://www.googleapis.com/books/v1/volumes/${bookId}?key=${API_KEY}`, function (data) {
+                const details = `
+                    <h3>${data.volumeInfo.title}</h3>
+                    <p><strong>Authors:</strong> ${data.volumeInfo.authors?.join(', ') || 'Unknown'}</p>
+                    <p><strong>Description:</strong> ${data.volumeInfo.description || 'No description available.'}</p>
+                    <img src="${data.volumeInfo.imageLinks?.thumbnail || 'https://via.placeholder.com/150'}" alt="${data.volumeInfo.title}">
+                `;
+                $('#book-details').html(details);
+            });
+        }
+
+        function loadBookshelf() {
+            $.getJSON(`https://www.googleapis.com/books/v1/users/${USER_ID}/bookshelves/${BOOKSHELF_ID}/volumes?key=${API_KEY}`, function (data) {
+                $('#bookshelf').empty();
+
+                if (data.items) {
+                    $.each(data.items, function (index, item) {
+                        const title = item.volumeInfo.title;
+                        const image = item.volumeInfo.imageLinks?.thumbnail || 'https://via.placeholder.com/150';
+                        const bookId = item.id;
+
+                        $('#bookshelf').append(`
+                            <div class="book-item" data-id="${bookId}">
+                                <img src="${image}" alt="${title}">
+                                <h4>${title}</h4>
+                            </div>
+                        `);
+                    });
+                } else {
+                    $('#bookshelf').append('<p>No books found in your bookshelf.</p>');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
