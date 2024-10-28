@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Books Search & Bookshelf</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f8ff;
+            margin: 0;
+            padding: 0;
+        }
+        h1 {
+            text-align: center;
+            padding: 20px;
+            background-color: #0073e6;
+            color: white;
+            margin: 0;
+        }
+        #searchContainer {
+            text-align: center;
+            margin-top: 20px;
+        }
+        #search-input {
+            padding: 10px;
+            width: 300px;
+            border: 1px solid #0073e6;
+            border-radius: 4px;
+        }
+        #search-btn {
+            padding: 10px 15px;
+            margin-left: 10px;
+            background-color: #0073e6;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #tab-buttons {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .tab-btn {
+            margin: 0 10px;
+            padding: 10px 20px;
+            border: 1px solid #0073e6;
+            border-radius: 4px;
+            background-color: white;
+            color: #0073e6;
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            background-color: #0073e6;
+            color: white;
+        }
+        #results, #bookshelf {
+            display: none;
+            margin-top: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .book-item {
+            border: 1px solid #0073e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px;
+            background-color: white;
+            width: 200px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .book-item img {
+            max-height: 150px;
+            border-radius: 4px;
+        }
+        .book-details {
+            display: none;
+            padding: 15px;
+            margin: 10px;
+            border: 1px solid #ccc;
+            background-color: #fafafa;
+        }
+        #navigation {
+            text-align: center;
+            margin: 20px;
+        }
+        #navigation a {
+            margin: 0 10px;
+            text-decoration: none;
+            color: #0073e6;
+        }
+        #navigation a:hover {
+            text-decoration: underline;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mustache@4.2.0/mustache.min.js"></script>
+</head>
+<body>
+    <h1>Google Books Search & Bookshelf</h1>
+
+    <div id="searchContainer">
+        <input type="text" id="search-input" placeholder="Search for books...">
+        <button id="search-btn">Search</button>
+    </div>
+
+    <div id="tab-buttons">
+        <button class="tab-btn active" data-tab="results">Search Results</button>
+        <button class="tab-btn" data-tab="bookshelf">Public Bookshelf</button>
+    </div>
+
+    <div id="results" class="tab-content"></div>
+    <div id="bookshelf" class="tab-content"></div>
+
+    <script id="book-template" type="x-tmpl-mustache">
+        <div class="book-item" data-id="{{id}}">
+            <img src="{{image}}" alt="{{title}}">
+            <h4>{{title}}</h4>
+        </div>
+        <div class="book-details" id="details-{{id}}">
+            <h3>{{title}}</h3>
+            <p><strong>Authors:</strong> {{authors}}</p>
+            <p><strong>Publisher:</strong> {{publisher}}</p>
+            <p><strong>Published Date:</strong> {{publishedDate}}</p>
+            <p><strong>Categories:</strong> {{categories}}</p>
+            <p><strong>Page Count:</strong> {{pageCount}}</p>
+            <p><strong>Description:</strong> {{description}}</p>
+        </div>
+    </script>
+
+    <script>
+        const API_KEY = 'AIzaSyC0C4zLhjMI7taoSU23-q_kI4iFNq0IRFc';
+        const USER_ID = '101559322311645416637';
+        const BOOKSHELF_ID = '1001';
+        let startIndex = 0;
+
+        $(document).ready(function () {
+            $('#search-btn').on('click', function () {
+                startIndex = 0;
+                $('#results').empty();
+                searchBooks();
+                switchTab('results');
+            });
+
+            // Add event listener for Enter key
+            $('#search-input').on('keypress', function (event) {
+                if (event.which === 13) { // Enter key code
+                    startIndex = 0;
+                    $('#results').empty();
+                    searchBooks();
+                    switchTab('results');
+                }
+            });
+
+            $('.tab-btn').on('click', function () {
+                const tab = $(this).data('tab');
+                switchTab(tab);
+            });
+
+            $(document).on('click', '.book-item', function () {
+                const bookId = $(this).data('id');
+                $(`#details-${bookId}`).slideToggle();
+            });
+
+            loadBookshelf();
+        });
+
+        function switchTab(tab) {
+            $('.tab-btn').removeClass('active');
+            $(`.tab-btn[data-tab="${tab}"]`).addClass('active');
+            $('.tab-content').hide();
+            $(`#${tab}`).show();
+        }
+
+        function searchBooks() {
+            const query = $('#search-input').val();
+            const url = `https://www.googleapis.com/books/v1/volumes?q=${query}&startIndex=${startIndex}&maxResults=10&key=${API_KEY}`;
+
+            $.getJSON(url, function (data) {
+                if (data.items) {
+                    data.items.forEach(item => {
+                        const bookData = formatBookData(item);
+                        const rendered = Mustache.render($('#book-template').html(), bookData);
+                        $('#results').append(rendered);
+                    });
+                    startIndex += 10;
+                } else {
+                    $('#results').append('<p>No more results found.</p>');
+                }
+            });
+        }
+
+        function loadBookshelf() {
+            const url = `https://www.googleapis.com/books/v1/users/${USER_ID}/bookshelves/${BOOKSHELF_ID}/volumes?key=${API_KEY}`;
+
+            $.getJSON(url, function (data) {
+                if (data.items) {
+                    data.items.forEach(item => {
+                        const bookData = formatBookData(item);
+                        const rendered = Mustache.render($('#book-template').html(), bookData);
+                        $('#bookshelf').append(rendered);
+                    });
+                } else {
+                    $('#bookshelf').append('<p>No books found in your bookshelf.</p>');
+                }
+            });
+        }
+
+        function formatBookData(item) {
+            return {
+                id: item.id,
+                title: item.volumeInfo.title,
+                authors: item.volumeInfo.authors?.join(', ') || 'Unknown',
+                publisher: item.volumeInfo.publisher || 'Unknown',
+                publishedDate: item.volumeInfo.publishedDate || 'N/A',
+                categories: item.volumeInfo.categories?.join(', ') || 'N/A',
+                pageCount: item.volumeInfo.pageCount || 'N/A',
+                description: item.volumeInfo.description || 'No description available.',
+                image: item.volumeInfo.imageLinks?.thumbnail || 'https://via.placeholder.com/150',
+            };
+        }
+    </script>
+
+    <div id="navigation">
+        <a href="index.html">Back to Home</a>
+    </div>
+</body>
+</html>
